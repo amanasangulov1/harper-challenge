@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  harperdb:
+    image: harperdb/harperdb:latest
+    ports:
+      - "9925:9925"
+      - "9926:9926"
+    environment:
+      - HDB_ADMIN_USERNAME=admin
+      - HDB_ADMIN_PASSWORD=${HDB_ADMIN_PASSWORD}
+    volumes:
+      - harperdb_data:/opt/harperdb
+
+volumes:
+  harperdb_data:
