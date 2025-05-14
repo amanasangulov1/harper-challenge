@@ -1,5 +1,4 @@
-version: '3.8'
-
+version: '3'
 services:
   harperdb:
     image: harperdb/harperdb:latest
@@ -7,10 +6,4 @@ services:
       - "9925:9925"
       - "9926:9926"
     environment:
-      - HDB_ADMIN_USERNAME=admin
       - HDB_ADMIN_PASSWORD=${HDB_ADMIN_PASSWORD}
-    volumes:
-      - harperdb_data:/opt/harperdb
-
-volumes:
-  harperdb_data:
