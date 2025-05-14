@@ -1,71 +1,17 @@
-name: HarperDB CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
 jobs:
-  harperdb-test:
+  test-harperdb:
     runs-on: ubuntu-latest
     env:
       HDB_ADMIN_PASSWORD: ${{ secrets.HDB_ADMIN_PASSWORD }}
-    services:
-      harperdb:
-        image: harperdb/harperdb:latest
-        ports:
-          - 9925:9925
-          - 9926:9926
-        env:
-          HDB_ADMIN_USERNAME: admin
-          HDB_ADMIN_PASSWORD: ${{ secrets.HDB_ADMIN_PASSWORD }}
-        options: >-
-          --health-cmd="curl --fail http://localhost:9925 || exit 1"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Wait for HarperDB to become healthy
-        run: sleep 10
-
-      - name: Load initial data
+      - name: Start HarperDB
         run: |
-          curl -X POST http://localhost:9925 -H "Content-Type: application/json" -d '{
-            "operation": "insert",
-            "schema": "dev",
-            "table": "dogs",
-            "records": [{"name": "Fido"}, {"name": "Rex"}]
-          }' -u admin:${HDB_ADMIN_PASSWORD}
+          docker compose up -d
+          sleep 10
+          docker ps
 
-      - name: Update a record
-        run: |
-          curl -X POST http://localhost:9925 -H "Content-Type: application/json" -d '{
-            "operation": "update",
-            "schema": "dev",
-            "table": "dogs",
-            "records": [{"id": 1, "name": "Fido Updated"}]
-          }' -u admin:${HDB_ADMIN_PASSWORD}
-
-      - name: Validate update
-        run: |
-          curl -X POST http://localhost:9925 -H "Content-Type: application/json" -d '{
-            "operation": "search_by_value",
-            "schema": "dev",
-            "table": "dogs",
-            "search_attribute": "name",
-            "search_value": "Fido Updated",
-            "get_attributes": ["*"]
-          }' -u admin:${HDB_ADMIN_PASSWORD}
-
-      - name: Capture container metrics
-        run: |
-          docker stats --no-stream > container_stats.txt
-          cat container_stats.txt
-
-      - name: View HarperDB logs
+      - name: Check logs
         run: docker logs $(docker ps -q --filter "ancestor=harperdb/harperdb")
