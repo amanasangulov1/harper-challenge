@@ -23,7 +23,35 @@ jobs:
       - name: Show logs
         run: docker logs $(docker ps -aq --filter "ancestor=harperdb/harperdb")
 
-      - name: Call HarperDB API
+      - name: Validate container ports
         run: |
-          curl -X POST http://localhost:9925 -H "Content-Type: application/json" \
-          -d '{"operation":"describe_all", "username":"HDB_ADMIN", "password":"${HDB_ADMIN_PASSWORD}"}'
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:9925
+
+      - name: Create schema and table
+        run: |
+          curl -X POST http://localhost:9925 \
+            -H "Content-Type: application/json" \
+            -d '{"operation":"create_schema","schema_name":"dev","username":"HDB_ADMIN","password":"${HDB_ADMIN_PASSWORD}"}'
+
+          curl -X POST http://localhost:9925 \
+            -H "Content-Type: application/json" \
+            -d '{"operation":"create_table","schema":"dev","table":"users","hash_attribute":"id","username":"HDB_ADMIN","password":"${HDB_ADMIN_PASSWORD}"}'
+
+      - name: Insert and update records
+        run: |
+          curl -X POST http://localhost:9925 \
+            -H "Content-Type: application/json" \
+            -d '{"operation":"insert","schema":"dev","table":"users","records":[{"id":1,"name":"Alice"},{"id":2,"name":"Bob"}],"username":"HDB_ADMIN","password":"${HDB_ADMIN_PASSWORD}"}'
+
+          curl -X POST http://localhost:9925 \
+            -H "Content-Type: application/json" \
+            -d '{"operation":"update","schema":"dev","table":"users","records":[{"id":1,"name":"Alice Updated"}],"username":"HDB_ADMIN","password":"${HDB_ADMIN_PASSWORD}"}'
+
+      - name: Validate updates
+        run: |
+          curl -X POST http://localhost:9925 \
+            -H "Content-Type: application/json" \
+            -d '{"operation":"search_by_value","schema":"dev","table":"users","search_attribute":"id","search_value":1,"get_attributes":["id","name"],"username":"HDB_ADMIN","password":"${HDB_ADMIN_PASSWORD}"}'
+
+      - name: Collect performance metrics
+        run: docker stats --no-stream
