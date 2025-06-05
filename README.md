@@ -1,4 +1,4 @@
-# HarperDB CI/CD Challenge
+# HarperDB test
 
 This repository contains a Docker Compose setup and a GitHub Actions pipeline that:
 - Deploys a HarperDB container
